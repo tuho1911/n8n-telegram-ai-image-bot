@@ -1,0 +1,257 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "name": "={{ $json.ten_file_edit }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1504,
+        -16
+      ],
+      "id": "a0acc642-45ca-4d69-8edd-f61fd9e3cd9d",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "VtV10cRsvKMTZkEq",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        288
+      ],
+      "id": "b252a0b8-a0e1-441e-be73-8753713f3c18",
+      "name": "Telegram Trigger",
+      "webhookId": "74a0fa3d-391d-4171-8423-cee1fd2757c2",
+      "credentials": {
+        "telegramApi": {
+          "id": "lpfWZC8eXveLhQB7",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[2].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        288
+      ],
+      "id": "3ec8eefd-791a-47c6-afe9-30cf2f352a95",
+      "name": "Get a file",
+      "webhookId": "2205d2b7-d1f0-43dc-be11-ac419e59cda9",
+      "credentials": {
+        "telegramApi": {
+          "id": "lpfWZC8eXveLhQB7",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5070a56d-f370-4876-b567-354808c124ef",
+              "name": "=prompt",
+              "value": "={{ $('Telegram Trigger').item.json.message.caption }}",
+              "type": "string"
+            },
+            {
+              "id": "32e0f321-29a4-40e9-928f-825234db7afa",
+              "name": "=ten_file_edit.png",
+              "value": "={{ $now.format('yyyyMMdd_HHmmss') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        288
+      ],
+      "id": "1c00ace6-a656-4227-bdbe-a58c2a96fba9",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "resize",
+        "width": 1024,
+        "height": 1024,
+        "resizeOption": "ignoreAspectRatio",
+        "options": {
+          "format": "png"
+        }
+      },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        288
+      ],
+      "id": "cc0188b8-6a7e-4e9c-8769-bf5b98709b26",
+      "name": "Edit Image"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "image/png"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "init_image",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "text_prompts[0][text]",
+              "value": "={{ $json.prompt }}"
+            },
+            {
+              "name": "image_strength",
+              "value": "0.1"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1328,
+        128
+      ],
+      "id": "81515e9c-fb4f-426c-aa6b-5fb1081028c8",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZIhaONyInAX4ZmA2",
+          "name": "Header Auth account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Edit Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Image": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a48962c7-a878-4a91-9007-bac177efe0eb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e24182c0968bc60c4ee9113631411502971f5b6af4c3541ba5b6fc22af6a5850"
+  },
+  "id": "5XXlONXLq5RurEaf",
+  "tags": []
+}
